@@ -1,10 +1,9 @@
 package org.example.dao;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.NoResultException;
-import jakarta.persistence.TypedQuery;
+import jakarta.persistence.*;
+import jakarta.persistence.criteria.*;
 import org.example.model.Reader;
+import org.example.model.Reader_;
 
 import java.util.List;
 import java.util.logging.Level;
@@ -20,13 +19,13 @@ public class DAOReader extends DAO<Reader> {
 
         try {
             tx.begin();
-            em.persist(reader);
+            em.merge(reader);
             tx.commit();
             logger.log(Level.INFO, "Создан Reader: {0}", reader);
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             logger.log(Level.SEVERE, "Ошибка при создании Reader: " + reader, e);
-            throw e;
+            throw new PersistenceException("Не удалось создать Reader: " + reader, e);
         } finally {
             em.close();
         }
@@ -34,10 +33,16 @@ public class DAOReader extends DAO<Reader> {
 
     public Reader read(int id) {
         EntityManager em = emf.createEntityManager();
+
         try {
-            TypedQuery<Reader> query = em.createNamedQuery("Reader.findById", Reader.class);
-            query.setParameter("id", id);
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Reader> cq = cb.createQuery(Reader.class);
+            Root<Reader> root = cq.from(Reader.class);
+            cq.select(root).where(cb.equal(root.get(Reader_.id), id));
+
+            TypedQuery<Reader> query = em.createQuery(cq);
             Reader result = query.getSingleResult();
+
             logger.log(Level.INFO, "Прочитан Reader с id={0}: {1}", new Object[]{id, result});
             return result;
         } catch (NoResultException e) {
@@ -45,7 +50,7 @@ public class DAOReader extends DAO<Reader> {
             return null;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Ошибка при чтении Reader с id=" + id, e);
-            throw e;
+            throw new PersistenceException("Не удалось прочитать Reader с id=" + id, e);
         } finally {
             em.close();
         }
@@ -63,7 +68,7 @@ public class DAOReader extends DAO<Reader> {
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             logger.log(Level.SEVERE, "Ошибка при обновлении Reader: " + reader, e);
-            throw e;
+            throw new PersistenceException("Не удалось обновить Reader: " + reader, e);
         } finally {
             em.close();
         }
@@ -75,18 +80,25 @@ public class DAOReader extends DAO<Reader> {
 
         try {
             tx.begin();
-            Reader reader = em.find(Reader.class, id);
-            if (reader != null) {
-                em.remove(reader);
+
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaDelete<Reader> delete = cb.createCriteriaDelete(Reader.class);
+            Root<Reader> root = delete.from(Reader.class);
+            delete.where(cb.equal(root.get(Reader_.id), id));
+
+            int deleted = em.createQuery(delete).executeUpdate();
+
+            if (deleted > 0) {
                 logger.log(Level.INFO, "Удалён Reader с id={0}", id);
             } else {
                 logger.log(Level.WARNING, "Попытка удалить несуществующий Reader с id={0}", id);
             }
+
             tx.commit();
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
             logger.log(Level.SEVERE, "Ошибка при удалении Reader с id=" + id, e);
-            throw e;
+            throw new PersistenceException("Не удалось удалить Reader с id=" + id, e);
         } finally {
             em.close();
         }
@@ -94,14 +106,21 @@ public class DAOReader extends DAO<Reader> {
 
     public List<Reader> getAll() {
         EntityManager em = emf.createEntityManager();
+
         try {
-            TypedQuery<Reader> query = em.createNamedQuery("Reader.findAll", Reader.class);
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Reader> cq = cb.createQuery(Reader.class);
+            Root<Reader> root = cq.from(Reader.class);
+            cq.select(root);
+
+            TypedQuery<Reader> query = em.createQuery(cq);
             List<Reader> result = query.getResultList();
+
             logger.log(Level.INFO, "Получено {0} записей Reader.", result.size());
             return result;
         } catch (Exception e) {
             logger.log(Level.SEVERE, "Ошибка при получении всех записей Reader.", e);
-            throw e;
+            throw new PersistenceException("Не удалось получить список Reader.", e);
         } finally {
             em.close();
         }

@@ -4,16 +4,6 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "reader")
-@NamedQueries({
-        @NamedQuery(
-                name = "Reader.findById",
-                query = "SELECT r FROM Reader r WHERE r.id = :id"
-        ),
-        @NamedQuery(
-                name = "Reader.findAll",
-                query = "SELECT r FROM Reader r"
-        )
-})
 public class Reader {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

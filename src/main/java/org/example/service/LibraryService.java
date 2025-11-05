@@ -61,7 +61,7 @@ public class LibraryService {
             return freeCopies;
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+            throw new LibraryServiceException("Ошибка БД при получении свободных копий книг");
         }
     }
     public List<Reader> getReadersWithDebt() {
