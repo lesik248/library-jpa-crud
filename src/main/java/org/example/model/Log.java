@@ -2,20 +2,26 @@ package org.example.model;
 
 import jakarta.persistence.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "logbook")
 public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+    @Column(name = "book_id")
     private int bookId;
+    @Column(name = "reader_id")
     private int readerId;
+    @Column(name = "issue_date")
     private String issueDate;
-    private String returnDate;
+    @Column(name = "return_date", insertable = false, updatable = false)
+    private LocalDate returnDate;
     private int debt;
 
     public Log() {}
-    public Log(int id, int bookId, int readerId, String issueDate, String returnDate, int debt) {
+    public Log(int id, int bookId, int readerId, String issueDate, LocalDate returnDate, int debt) {
         this.id = id;
         this.bookId = bookId;
         this.readerId = readerId;
@@ -47,10 +53,10 @@ public class Log {
     public void setIssueDate(String issueDate) {
         this.issueDate = issueDate;
     }
-    public String getReturnDate() {
+    public LocalDate getReturnDate() {
         return returnDate;
     }
-    public void setReturnDate(String returnDate) {
+    public void setReturnDate(LocalDate returnDate) {
         this.returnDate = returnDate;
     }
     public int getDebt() {

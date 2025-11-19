@@ -1,5 +1,6 @@
 package org.example.service;
 
+import jakarta.persistence.PersistenceException;
 import org.example.dao.DAOBook;
 import org.example.dao.DAOLog;
 import org.example.dao.DAOReader;
@@ -8,6 +9,7 @@ import org.example.model.Log;
 import org.example.model.Reader;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,20 +36,24 @@ public class LibraryService {
             Book targetBook = null;
 
             for (Book book : books) {
-                author = author.trim().toLowerCase();
-                if (book.getTitle().equalsIgnoreCase(bookTitle) && book.getAuthor().equalsIgnoreCase(author)) {
+                if (book.getTitle().equalsIgnoreCase(bookTitle)
+                        && book.getAuthor().equalsIgnoreCase(author)) {
                     targetBook = book;
                 }
             }
+
             if (targetBook == null) {
                 throw new LibraryServiceException("Книга " + bookTitle + " не найдена");
             }
+
             return targetBook;
-        }
-        catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+
+        } catch (PersistenceException e) {
+            // Ошибка базы — логично
+            throw new LibraryServiceException("Ошибка БД", e);
         }
     }
+
     public int getFreeCopiesOfBook(String author, String bookTitle) {
         try {
             Book targetBook = getBookByTitle(bookTitle, author);
@@ -61,27 +67,31 @@ public class LibraryService {
             return freeCopies;
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД при получении свободных копий книг");
+            e.printStackTrace();
+            throw new LibraryServiceException("Ошибка БД при получении свободных копий книг", e);
         }
     }
     public List<Reader> getReadersWithDebt() {
-        try {
-            List<Log> logs = daoLog.getAll();
-            List<Reader> readersWithDebt = new ArrayList<>();
-            for (Log log : logs) {
-                if (log.getDebt() > 30) {
-                    readersWithDebt.add(daoReader.read(log.getReaderId()));
-                }
+        List<Log> logs = daoLog.getAll();
+        List<Reader> result = new ArrayList<>();
+
+        LocalDate today = LocalDate.now();
+
+        for (Log log : logs) {
+            System.out.println("Log id=" + log.getId() + " returnDate=" + log.getReturnDate());
+
+            LocalDate returnDate = log.getReturnDate();
+
+            long days = ChronoUnit.DAYS.between(returnDate, today);
+
+            if (days > 30) {
+                result.add(daoReader.read(log.getReaderId()));
             }
-            if (readersWithDebt.isEmpty()) {
-                throw new LibraryServiceException("Нет читателей с задолженностью более 1 месяца");
-            }
-            return readersWithDebt;
         }
-        catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
-        }
+
+        return result;
     }
+
     public HashMap<Book, Integer> getBooksForAuthor(String author) {
         try {
             HashMap<Book, Integer> booksInfo = new HashMap<>();
@@ -99,7 +109,7 @@ public class LibraryService {
             return booksInfo;
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+            throw new LibraryServiceException("Ошибка БД", e);
         }
     }
     public Reader getReaderByName(String name) {
@@ -115,7 +125,7 @@ public class LibraryService {
             return targetReader;
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+            throw new LibraryServiceException("Ошибка БД", e);
         }
     }
 
@@ -140,12 +150,13 @@ public class LibraryService {
                     targetBook.getId(),
                     targetReader.getId(),
                     issueDate.toString(),
-                    returnDate.toString(),
+                    returnDate,
                     (int) debtDays
             ));
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+            e.printStackTrace();
+            throw new LibraryServiceException("Ошибка БД", e);
         }
     }
     public void removeBook(String author, String title) {
@@ -160,7 +171,7 @@ public class LibraryService {
             }
         }
         catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД");
+            throw new LibraryServiceException("Ошибка БД", e);
         }
     }
 }

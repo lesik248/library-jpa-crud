@@ -116,6 +116,7 @@ public class DAOLog extends DAO<Log> {
             TypedQuery<Log> query = em.createQuery(cq);
             List<Log> result = query.getResultList();
 
+
             logger.log(Level.INFO, "Получено {0} записей Log.", result.size());
             return result;
         } catch (Exception e) {

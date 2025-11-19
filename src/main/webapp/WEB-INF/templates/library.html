@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Library</title>
+
+    <script>
+        function updateFields() {
+            let action = document.getElementById("action").value;
+
+            document.getElementById("book-field").style.display = "none";
+            document.getElementById("author-field").style.display = "none";
+            document.getElementById("reader-field").style.display = "none";
+
+
+            if (action === "freeCopies") {
+                document.getElementById("book-field").style.display = "block";
+                document.getElementById("author-field").style.display = "block";
+            }
+
+
+            else if (action === "getForLanguage") {
+                document.getElementById("author-field").style.display = "block";
+            }
+
+            else if (action === "giveBook") {
+                document.getElementById("reader-field").style.display = "block";
+                document.getElementById("book-field").style.display = "block";
+                document.getElementById("author-field").style.display = "block";
+            }
+
+            else if (action === "removeBook") {
+                document.getElementById("book-field").style.display = "block";
+                document.getElementById("author-field").style.display = "block";
+            }
+        }
+    </script>
+</head>
+
+<body onload="updateFields()">
+
+<h1>Library</h1>
+
+<form method="get" action="/DemoServlet/library">
+    <label>Выберите действие:</label>
+    <select name="action" id="action" onchange="updateFields()">
+        <option value="freeCopies">1 — Получить количество свободных экземпляров книги</option>
+        <option value="getReadersWithDebt">2 — Получить читателей с невозвращёнными книгами</option>
+        <option value="getForLanguage">3 — Получить книги автора</option>
+        <option value="giveBook">4 — Выдать книгу читателю</option>
+        <option value="removeBook">5 — Списать экземпляр книги</option>
+    </select>
+    <br><br>
+
+    <div id="book-field">
+        <label>Название книги:</label>
+        <input type="text" name="book" placeholder="Война и мир"/>
+        <br><br>
+    </div>
+
+    <div id="author-field">
+        <label>Автор:</label>
+        <input type="text" name="author" placeholder="Толстой Л.Н."/>
+        <br><br>
+    </div>
+
+    <div id="reader-field">
+        <label>Имя читателя:</label>
+        <input type="text" name="name" placeholder="Иван Иванов"/>
+        <br><br>
+    </div>
+
+    <button type="submit">Отправить</button>
+</form>
+
+<hr>
+
+<div th:if="${data != null}">
+    <pre th:text="${data}"></pre>
+</div>
+
+</body>
+</html>

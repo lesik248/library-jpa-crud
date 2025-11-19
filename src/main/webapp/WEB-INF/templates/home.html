@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${title}">Главная</title>
+</head>
+<body>
+<h1 th:text="${title}"></h1>
+<p th:text="${message}"></p>
+
+<h3>Навигация:</h3>
+<ul>
+    <li><a href="DemoServlet/library">Запросы</a></li>
+</ul>
+
+<p>Ваши посещения: <span th:text="${visits}">0</span></p>
+
+<p th:if="${lastVisit != null}">
+    Последний визит: <span th:text="${lastVisit}"></span>
+</p>
+
+<p th:if="${lastVisit == null}">
+    Первый визит! Добро пожаловать!
+</p>
+
+</body>
+</html>
