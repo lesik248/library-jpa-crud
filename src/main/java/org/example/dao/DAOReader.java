@@ -24,7 +24,6 @@ public class DAOReader extends DAO<Reader> {
             logger.log(Level.INFO, "Создан Reader: {0}", reader);
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при создании Reader: " + reader, e);
             throw new PersistenceException("Не удалось создать Reader: " + reader, e);
         } finally {
             em.close();
@@ -49,7 +48,6 @@ public class DAOReader extends DAO<Reader> {
             logger.log(Level.WARNING, "Reader с id={0} не найден.", id);
             return null;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Ошибка при чтении Reader с id=" + id, e);
             throw new PersistenceException("Не удалось прочитать Reader с id=" + id, e);
         } finally {
             em.close();
@@ -67,7 +65,6 @@ public class DAOReader extends DAO<Reader> {
             logger.log(Level.INFO, "Обновлён Reader: {0}", reader);
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при обновлении Reader: " + reader, e);
             throw new PersistenceException("Не удалось обновить Reader: " + reader, e);
         } finally {
             em.close();
@@ -97,7 +94,6 @@ public class DAOReader extends DAO<Reader> {
             tx.commit();
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при удалении Reader с id=" + id, e);
             throw new PersistenceException("Не удалось удалить Reader с id=" + id, e);
         } finally {
             em.close();
@@ -119,7 +115,6 @@ public class DAOReader extends DAO<Reader> {
             logger.log(Level.INFO, "Получено {0} записей Reader.", result.size());
             return result;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Ошибка при получении всех записей Reader.", e);
             throw new PersistenceException("Не удалось получить список Reader.", e);
         } finally {
             em.close();

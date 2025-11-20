@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Ошибка</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="navbar">
+    <a href="/DemoServlet/index.html">Главная</a>
+    <a href="/DemoServlet/library/freeCopies">Свободные экземпляры</a>
+    <a href="/DemoServlet/library/booksByAuthor">Книги автора</a>
+    <a href="/DemoServlet/library/readersWithDebt">Должники</a>
+    <a href="/DemoServlet/library/giveBook">Выдать книгу</a>
+    <a href="/DemoServlet/library/removeBook">Списать книгу</a>
+</div>
+
+
+<h1>Произошла ошибка</h1>
+
+<div class="error" th:if="${message}" th:text="${message}"></div>
+
+
+<a href="/DemoServlet">Вернуться на главную</a>
+
+</body>
+</html>

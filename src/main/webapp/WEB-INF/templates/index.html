@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Библиотека</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="navbar">
+    <a href="/DemoServlet/library/freeCopies">Свободные экземпляры</a>
+    <a href="/DemoServlet/library/readersWithDebt">Должники</a>
+    <a href="/DemoServlet/library/booksByAuthor">Книги автора</a>
+    <a href="/DemoServlet/library/giveBook">Выдать книгу</a>
+    <a href="/DemoServlet/library/removeBook">Списать книгу</a>
+</div>
+
+<div class="container">
+    <h1>Библиотека</h1>
+
+    <h2>Выберите действие:</h2>
+
+    <ul>
+        <li><a href="/DemoServlet/library/freeCopies">Свободные экземпляры книги</a></li>
+        <li><a href="/DemoServlet/library/readersWithDebt">Список должников</a></li>
+        <li><a href="/DemoServlet/library/booksByAuthor">Книги автора</a></li>
+        <li><a href="/DemoServlet/library/giveBook">Выдать книгу</a></li>
+        <li><a href="/DemoServlet/library/removeBook">Списать экземпляр</a></li>
+    </ul>
+</div>
+
+<p>Ваши посещения: <span th:text="${visits}">0</span></p>
+
+<p th:if="${lastVisit != null}">
+    Последний визит: <span th:text="${lastVisit}"></span>
+</p>
+
+</body>
+</html>

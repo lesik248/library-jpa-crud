@@ -49,7 +49,6 @@ public class DAOBook extends DAO<Book> {
             logger.log(Level.WARNING, "Book с id={0} не найден.", id);
             return null;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Ошибка при чтении Book с id=" + id, e);
             throw new PersistenceException("Не удалось прочитать книгу с id=" + id, e);
         } finally {
             em.close();
@@ -67,7 +66,6 @@ public class DAOBook extends DAO<Book> {
             logger.log(Level.INFO, "Обновлён Book: {0}", book);
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при обновлении Book: " + book, e);
             throw new PersistenceException("Не удалось обновить книгу: " + book, e);
         } finally {
             em.close();
@@ -97,7 +95,6 @@ public class DAOBook extends DAO<Book> {
             tx.commit();
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при удалении Book с id=" + id, e);
             throw new PersistenceException("Не удалось удалить книгу с id=" + id, e);
         } finally {
             em.close();
@@ -119,7 +116,6 @@ public class DAOBook extends DAO<Book> {
             logger.log(Level.INFO, "Получено {0} записей Book.", result.size());
             return result;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Ошибка при получении всех записей Book.", e);
             throw new PersistenceException("Не удалось получить список книг.", e);
         } finally {
             em.close();

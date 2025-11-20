@@ -16,18 +16,20 @@ public class DAOLog extends DAO<Log> {
     public void create(Log log) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
-
         try {
+            logger.info("Создание Log: " + log);
+            logger.info("bookId=" + log.getBookId() + ", readerId=" + log.getReaderId() +
+                    ", issueDate=" + log.getIssueDate() + ", returnDate=" + log.getReturnDate() +
+                    ", debt=" + log.getDebt());
+
             tx.begin();
             em.merge(log);
             tx.commit();
-            logger.log(Level.INFO, "Создан Log: {0}", log);
+            logger.info("Log успешно создан: " + log);
+
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при создании Log: " + log, e);
             throw new PersistenceException("Не удалось создать Log: " + log, e);
-        } finally {
-            em.close();
         }
     }
 
@@ -49,7 +51,6 @@ public class DAOLog extends DAO<Log> {
             logger.log(Level.WARNING, "Log с id={0} не найден.", id);
             return null;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Ошибка при чтении Log с id=" + id, e);
             throw new PersistenceException("Не удалось прочитать Log с id=" + id, e);
         } finally {
             em.close();
@@ -67,7 +68,6 @@ public class DAOLog extends DAO<Log> {
             logger.log(Level.INFO, "Обновлён Log: {0}", log);
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.log(Level.SEVERE, "Ошибка при обновлении Log: " + log, e);
             throw new PersistenceException("Не удалось обновить Log: " + log, e);
         } finally {
             em.close();
@@ -115,7 +115,6 @@ public class DAOLog extends DAO<Log> {
 
             TypedQuery<Log> query = em.createQuery(cq);
             List<Log> result = query.getResultList();
-
 
             logger.log(Level.INFO, "Получено {0} записей Log.", result.size());
             return result;

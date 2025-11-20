@@ -9,19 +9,19 @@ import java.time.LocalDate;
 public class Log {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    private Integer id;
     @Column(name = "book_id")
-    private int bookId;
+    private Integer bookId;
     @Column(name = "reader_id")
-    private int readerId;
+    private Integer readerId;
     @Column(name = "issue_date")
     private String issueDate;
-    @Column(name = "return_date", insertable = false, updatable = false)
+    @Column(name = "return_date")
     private LocalDate returnDate;
     private int debt;
 
     public Log() {}
-    public Log(int id, int bookId, int readerId, String issueDate, LocalDate returnDate, int debt) {
+    public Log(Integer id, Integer bookId, Integer readerId, String issueDate, LocalDate returnDate, int debt) {
         this.id = id;
         this.bookId = bookId;
         this.readerId = readerId;

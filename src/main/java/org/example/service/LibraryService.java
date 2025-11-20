@@ -9,169 +9,189 @@ import org.example.model.Log;
 import org.example.model.Reader;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LibraryService {
+
+    private static final Logger logger = Logger.getLogger(LibraryService.class.getName());
+
     private final DAOBook daoBook;
     private final DAOLog daoLog;
     private final DAOReader daoReader;
 
-    private static final Logger logger = Logger.getLogger(LibraryService.class.getName());
-
     public LibraryService() {
-
-            daoBook = new DAOBook();
-            daoLog = new DAOLog();
-            daoReader = new DAOReader();
+        daoBook = new DAOBook();
+        daoLog = new DAOLog();
+        daoReader = new DAOReader();
     }
-    private Book getBookByTitle(String bookTitle, String author) {
-        try {
-            List<Book> books = daoBook.getAll();
-            Book targetBook = null;
 
-            for (Book book : books) {
-                if (book.getTitle().equalsIgnoreCase(bookTitle)
-                        && book.getAuthor().equalsIgnoreCase(author)) {
-                    targetBook = book;
+    private Book getBookByTitle(String title, String author) {
+        try {
+            logger.info("Поиск книги: \"" + title + "\" автора \"" + author + "\"");
+            List<Book> books = daoBook.getAll();
+
+            for (Book b : books) {
+                if (b.getTitle().equalsIgnoreCase(title) && b.getAuthor().equalsIgnoreCase(author)) {
+                    logger.info("Книга найдена: " + b);
+                    return b;
                 }
             }
 
-            if (targetBook == null) {
-                throw new LibraryServiceException("Книга " + bookTitle + " не найдена");
-            }
-
-            return targetBook;
+            throw new LibraryNotFoundException("Книга \"" + title + "\" автора \"" + author + "\" не найдена");
 
         } catch (PersistenceException e) {
-            // Ошибка базы — логично
-            throw new LibraryServiceException("Ошибка БД", e);
+            throw new LibraryDatabaseException("Ошибка БД при поиске книги", e);
         }
     }
 
-    public int getFreeCopiesOfBook(String author, String bookTitle) {
+    private Reader getReaderByNameInternal(String name) {
         try {
-            Book targetBook = getBookByTitle(bookTitle, author);
-            int freeCopies = targetBook.getCopies();
-            List<Log> logs = daoLog.getAll();
-            for (Log log : logs) {
-                if (log.getBookId() == targetBook.getId()) {
-                    freeCopies--;
-                }
-            }
-            return freeCopies;
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            throw new LibraryServiceException("Ошибка БД при получении свободных копий книг", e);
-        }
-    }
-    public List<Reader> getReadersWithDebt() {
-        List<Log> logs = daoLog.getAll();
-        List<Reader> result = new ArrayList<>();
-
-        LocalDate today = LocalDate.now();
-
-        for (Log log : logs) {
-            System.out.println("Log id=" + log.getId() + " returnDate=" + log.getReturnDate());
-
-            LocalDate returnDate = log.getReturnDate();
-
-            long days = ChronoUnit.DAYS.between(returnDate, today);
-
-            if (days > 30) {
-                result.add(daoReader.read(log.getReaderId()));
-            }
-        }
-
-        return result;
-    }
-
-    public HashMap<Book, Integer> getBooksForAuthor(String author) {
-        try {
-            HashMap<Book, Integer> booksInfo = new HashMap<>();
-            List<Book> books = daoBook.getAll();
-            for (Book book : books) {
-                String bookAuthor = book.getAuthor();
-                if (bookAuthor.equalsIgnoreCase(author)) {
-                    int copies = getFreeCopiesOfBook(bookAuthor, book.getTitle());
-                    booksInfo.put(book, copies);
-                }
-            }
-            if (booksInfo.isEmpty()) {
-                throw new LibraryServiceException("Нет книг этого автора");
-            }
-            return booksInfo;
-        }
-        catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД", e);
-        }
-    }
-    public Reader getReaderByName(String name) {
-        try {
+            logger.info("Поиск читателя: " + name);
             List<Reader> readers = daoReader.getAll();
 
-            Reader targetReader = null;
-            for (Reader reader : readers) {
-                if (reader.getName().equalsIgnoreCase(name)) {
-                    targetReader = reader;
+            for (Reader r : readers) {
+                if (r.getName().equalsIgnoreCase(name)) {
+                    logger.info("Читатель найден: " + r);
+                    return r;
                 }
             }
-            return targetReader;
-        }
-        catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД", e);
+
+            logger.info("Читатель не найден: " + name);
+            return null;
+
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при поиске читателя", e);
         }
     }
 
-    public void giveBook(String name, String author, String bookTitle) {
+    public int getFreeCopiesOfBook(String author, String title) {
         try {
-            Book targetBook = getBookByTitle(bookTitle, author);
+            logger.info("Подсчёт свободных копий книги \"" + title + "\" автора \"" + author + "\"");
+            Book book = getBookByTitle(title, author);
 
-            Reader targetReader = getReaderByName(name);
+            int free = book.getCopies();
+            List<Log> logs = daoLog.getAll();
 
-            if (targetReader == null) {
-                targetReader = new Reader(1, name);
-                daoReader.create(targetReader);
-                targetReader = getReaderByName(name);
+            for (Log log : logs) {
+                if (log.getBookId() == book.getId()) {
+                    free--;
+                }
             }
 
-            LocalDate issueDate = LocalDate.now();
-            LocalDate returnDate = issueDate.plusWeeks(2);
-            long debtDays = Math.max(ChronoUnit.DAYS.between(returnDate, LocalDate.now()), 0);
+            logger.info("Свободных копий найдено: " + free);
+            return free;
 
-            daoLog.create(new Log(
-                    1,
-                    targetBook.getId(),
-                    targetReader.getId(),
-                    issueDate.toString(),
-                    returnDate,
-                    (int) debtDays
-            ));
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            throw new LibraryServiceException("Ошибка БД", e);
+        } catch (LibraryNotFoundException e) {
+            throw e;
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при подсчёте копий", e);
         }
     }
+
+    public List<Reader> getReadersWithDebt() {
+        try {
+            logger.info("Поиск читателей с задолженностью");
+            List<Log> logs = daoLog.getAll();
+            List<Reader> result = new ArrayList<>();
+            LocalDate today = LocalDate.now();
+
+            for (Log log : logs) {
+                long days = ChronoUnit.DAYS.between(log.getReturnDate(), today);
+                if (days > 30) {
+                    Reader r = daoReader.read(log.getReaderId());
+                    if (r != null) {
+                        result.add(r);
+                        logger.info("Читатель с задолженностью: " + r);
+                    }
+                }
+            }
+
+            return result;
+
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при поиске должников", e);
+        }
+    }
+
+    public Map<Book, Integer> getBooksForAuthor(String author) {
+        try {
+            logger.info("Поиск книг автора: " + author);
+            Map<Book, Integer> result = new HashMap<>();
+            List<Book> books = daoBook.getAll();
+
+            for (Book b : books) {
+                if (b.getAuthor().equalsIgnoreCase(author)) {
+                    int free = getFreeCopiesOfBook(author, b.getTitle());
+                    result.put(b, free);
+                    logger.info("Книга: " + b + ", свободно: " + free);
+                }
+            }
+
+            if (result.isEmpty()) {
+                logger.warning("Книг автора \"" + author + "\" не найдено");
+                throw new LibraryNotFoundException("Книг автора \"" + author + "\" не найдено");
+            }
+
+            return result;
+
+        } catch (LibraryNotFoundException e) {
+            throw e;
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при поиске книг автора", e);
+        }
+    }
+
+    public void giveBook(String readerName, String author, String title) {
+        try {
+            logger.info("Выдача книги \"" + title + "\" автору \"" + author + "\" читателю \"" + readerName + "\"");
+            Book book = getBookByTitle(title, author);
+
+            Reader reader = getReaderByNameInternal(readerName);
+            if (reader == null) {
+                logger.info("Создание нового читателя: " + readerName);
+                daoReader.create(new Reader(0, readerName));
+                reader = getReaderByNameInternal(readerName);
+            }
+
+            LocalDate issue = LocalDate.now();
+            LocalDate ret = issue.plusWeeks(2);
+
+            Log log = new Log(null, book.getId(), reader.getId(), issue.toString(), ret, 0);
+            daoLog.create(log);
+            logger.info("Книга выдана, запись в журнале: " + log);
+
+        } catch (LibraryNotFoundException e) {
+            throw e;
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при выдаче книги", e);
+        }
+    }
+
     public void removeBook(String author, String title) {
         try {
+            logger.info("Списание книги \"" + title + "\" автора \"" + author + "\"");
             if (getFreeCopiesOfBook(author, title) > 0) {
-                Book targetBook = getBookByTitle(title, author);
-                targetBook.setCopies(targetBook.getCopies() - 1);
-                daoBook.update(targetBook);
-                if (targetBook.getCopies() == 0) {
-                    daoBook.delete(targetBook.getId());
+                Book book = getBookByTitle(title, author);
+                book.setCopies(book.getCopies() - 1);
+                daoBook.update(book);
+                logger.info("Обновлённое количество копий книги: " + book.getCopies());
+
+                if (book.getCopies() == 0) {
+                    daoBook.delete(book.getId());
+                    logger.info("Книга полностью списана, удалена из базы: " + book);
                 }
+            } else {
+                throw new LibraryNotFoundException("Нет свободных экземпляров для списания");
             }
-        }
-        catch (Exception e) {
-            throw new LibraryServiceException("Ошибка БД", e);
+
+        } catch (LibraryNotFoundException e) {
+            throw e;
+        } catch (PersistenceException e) {
+            throw new LibraryDatabaseException("Ошибка БД при списании книги", e);
         }
     }
+
 }

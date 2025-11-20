@@ -9,77 +9,88 @@ import org.thymeleaf.templateresolver.WebApplicationTemplateResolver;
 import org.thymeleaf.web.IWebApplication;
 import org.thymeleaf.web.servlet.IServletWebExchange;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
+
 import org.example.controller.HomeController;
-import org.example.controller.IController;
 import org.example.controller.LibraryController;
+import org.example.controller.IController;
 
 import java.io.IOException;
 import java.io.Writer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.logging.Logger;
 
 @WebServlet(name="DemoServlet", urlPatterns = "/DemoServlet/*")
 public class DemoServlet extends HttpServlet {
-    private static final long serialVersionUID = 1L;
+
+    private static final Logger logger = Logger.getLogger(DemoServlet.class.getName());
+
     private JakartaServletWebApplication application;
     private ITemplateEngine templateEngine;
 
     @Override
-    public void init(){
+    public void init() {
         this.application = JakartaServletWebApplication.buildApplication(getServletContext());
-
         this.templateEngine = buildTemplateEngine(this.application);
-
+        logger.info("DemoServlet initialized");
     }
 
     private ITemplateEngine buildTemplateEngine(final IWebApplication application) {
-        final WebApplicationTemplateResolver templateResolver = new WebApplicationTemplateResolver(application);
 
-        templateResolver.setTemplateMode(TemplateMode.HTML);
-        templateResolver.setPrefix("/WEB-INF/templates/");
-        templateResolver.setSuffix(".html");
-        templateResolver.setCacheTTLMs(Long.valueOf(3600000L));
+        final WebApplicationTemplateResolver resolver =
+                new WebApplicationTemplateResolver(application);
 
-        templateResolver.setCacheable(true);
+        resolver.setTemplateMode(TemplateMode.HTML);
+        resolver.setPrefix("/WEB-INF/templates/");
+        resolver.setSuffix(".html");
+        resolver.setCacheable(false);
 
-        final TemplateEngine templateEngine = new TemplateEngine();
-        templateEngine.setTemplateResolver(templateResolver);
+        final TemplateEngine engine = new TemplateEngine();
+        engine.setTemplateResolver(resolver);
 
-        return templateEngine;
+        return engine;
     }
 
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+
         response.setContentType("text/html;charset=UTF-8");
-
         handleCookies(request, response);
-
 
         try (Writer writer = response.getWriter()) {
 
             IController controller;
 
-            String requestURI = request.getRequestURI();
-            String query = request.getQueryString();
+            String uri = request.getRequestURI();
+            String path = uri.replaceFirst(".*/DemoServlet/", "");
 
-            if ("/DemoServlet".equals(requestURI) && query == null) {
+            if (path.equals("") || path.equals("/")) {
                 controller = new HomeController();
             }
+            else if (path.startsWith("library")) {
+                controller = new LibraryController(path);
+            }
             else {
-                controller = new LibraryController();
+                controller = new HomeController();
             }
 
-            final IServletWebExchange webExchange = this.application.buildExchange(request, response);
+            IServletWebExchange exchange = application.buildExchange(request, response);
+            controller.process(exchange, templateEngine, writer);
 
-            controller.process(webExchange, templateEngine, writer);
-
-        }  catch (Exception e) {
-            e.printStackTrace();
-            if (!response.isCommitted()) {
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-            }
+        } catch (Exception e) {
+            logger.severe("Critical error: " + e.getMessage());
+            sendErrorPage(response, "Ошибка сервера: " + e.getMessage());
         }
     }
+
+    private void sendErrorPage(HttpServletResponse response, String message) throws IOException {
+        if (response.isCommitted()) return;
+
+        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        response.sendRedirect("/DemoServlet/error?msg=" + message);
+    }
+
     private void handleCookies(HttpServletRequest request, HttpServletResponse response) {
 
         String lastVisitRaw = null;
@@ -114,19 +125,15 @@ public class DemoServlet extends HttpServlet {
         response.addCookie(dateCookie);
 
         String lastVisitStr = null;
-
         if (lastVisitRaw != null) {
             try {
                 long ts = Long.parseLong(lastVisitRaw);
                 Date date = new Date(ts);
-
-                SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
-                lastVisitStr = fmt.format(date);
+                lastVisitStr = new SimpleDateFormat("yyyy-MM-dd").format(date);
             } catch (Exception ignored) {}
         }
 
         request.setAttribute("lastVisit", lastVisitStr);
         request.setAttribute("visits", visits);
     }
-
 }
