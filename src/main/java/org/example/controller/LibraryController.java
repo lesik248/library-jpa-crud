@@ -32,71 +32,68 @@ public class LibraryController implements IController {
 
         String[] parts = path.split("/");
         if (parts.length < 2) {
-            sendError(engine, writer, exchange, "Некорректный путь");
-            return;
+            throw new Exception("Некорректный путь");
         }
 
         String action = parts[1];
+        String templateName = null;
 
         try {
 
             switch (action) {
 
                 case "freeCopies":
-                    try {
-                        handleFreeCopies(request, ctx, service);
-                    } catch (LibraryNotFoundException e) {
-                        ctx.setVariable("error", e.getMessage());
-                    }
-                    engine.process("free-copies", ctx, writer);
-                    return;
+                    handleFreeCopies(request, ctx, service);
+                    templateName = "free-copies";
+                    break;
 
                 case "booksByAuthor":
-                    try {
-                        handleBooksByAuthor(request, ctx, service);
-                    } catch (LibraryNotFoundException e) {
-                        ctx.setVariable("error", e.getMessage());
-                    }
-                    engine.process("books-author", ctx, writer);
-                    return;
+                    handleBooksByAuthor(request, ctx, service);
+                    templateName = "books-author";
+                    break;
 
                 case "readersWithDebt":
                     handleReadersWithDebt(ctx, service);
-                    engine.process("readers-debt", ctx, writer);
-                    return;
+                    templateName = "readers-debt";
+                    break;
 
                 case "giveBook":
-                    try {
-                        handleGiveBook(request, ctx, service);
-                    } catch (LibraryNotFoundException e) {
-                        ctx.setVariable("error", e.getMessage());
-                    }
-                    engine.process("give-book", ctx, writer);
-                    return;
+                    handleGiveBook(request, ctx, service);
+                    templateName = "give-book";
+                    break;
 
                 case "removeBook":
-                    try {
-                        handleRemoveBook(request, ctx, service);
-                    } catch (LibraryNotFoundException e) {
-                        ctx.setVariable("error", e.getMessage());
-                    }
-                    engine.process("remove-book", ctx, writer);
-                    return;
+                    handleRemoveBook(request, ctx, service);
+                    templateName = "remove-book";
+                    break;
 
                 default:
                     ctx.setVariable("message", "Неизвестное действие");
                     engine.process("error", ctx, writer);
+                    return;
             }
 
+            engine.process(templateName, ctx, writer);
+
+        } catch (LibraryNotFoundException e) {
+
+            logger.warn("LibraryNotFoundException: {}", e.getMessage());
+            ctx.setVariable("error", e.getMessage());
+
+            engine.process(templateName, ctx, writer);
+
         } catch (LibraryDatabaseException e) {
+
             logger.error("Database error", e);
-            sendError(engine, writer, exchange, "Ошибка базы данных");
+            throw e;
 
         } catch (Exception e) {
+
             logger.error("Critical error in LibraryController", e);
-            sendError(engine, writer, exchange, "Критическая ошибка сервера");
+            throw e;
         }
     }
+
 
     private void handleFreeCopies(IWebRequest request,
                                   WebContext ctx,
@@ -152,15 +149,5 @@ public class LibraryController implements IController {
 
         service.removeBook(author, book);
         ctx.setVariable("data", "Книга удалена.");
-    }
-
-    private void sendError(ITemplateEngine engine,
-                           Writer writer,
-                           IServletWebExchange exchange,
-                           String message) {
-
-        WebContext ctx = new WebContext(exchange, exchange.getLocale());
-        ctx.setVariable("message", message);
-        engine.process("error", ctx, writer);
     }
 }
