@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="navbar">
+    <a href="/home">Главная</a>
+    <a href="/sign-in">Вход</a>
+    <a href="/register">Регистрация</a>
+</div>
+
+<h1>Вход в систему</h1>
+
+<form method="post" action="/auth/sign-in">
+    <label>Имя пользователя:</label>
+    <input type="text" name="username" required><br><br>
+
+    <label>Пароль:</label>
+    <input type="password" name="password" required><br><br>
+
+    <button type="submit">Войти</button>
+</form>
+
+<hr>
+<div class="result-box" th:if="${message}">
+    <div class="message" th:text="${message}"></div>
+</div>
+
+<div class="error" th:if="${error}" th:text="${error}"></div>
+
+</body>
+</html>

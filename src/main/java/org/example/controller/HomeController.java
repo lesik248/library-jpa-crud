@@ -18,6 +18,6 @@ public class HomeController implements IController {
         context.setVariable("title", "Library Application");
         context.setVariable("message", "Электронная библиотека");
 
-        templateEngine.process("index", context, writer);
+        templateEngine.process("home", context, writer);
     }
 }
