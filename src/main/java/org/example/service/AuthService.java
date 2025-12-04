@@ -15,7 +15,7 @@ public class AuthService {
         }
 
         String hashed = hash(password);
-        dao.save(username, hashed);
+        dao.save(username, hashed, "user");
         return true;
     }
 
@@ -27,10 +27,9 @@ public class AuthService {
         return BCrypt.checkpw(password, user.getPassword());
     }
 
-    public void signOut(jakarta.servlet.http.HttpSession session) {
-        if (session != null) {
-            session.invalidate();
-        }
+    public String getRole(String username) {
+        User user = dao.find(username);
+        return user != null ? user.getRole() : "guest";
     }
 
     private String hash(String password) {

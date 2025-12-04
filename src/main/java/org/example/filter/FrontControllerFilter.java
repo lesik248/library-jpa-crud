@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Logger;
 
+// Фильтр перехватывает все запросы
 @WebFilter("/*")
 public class FrontControllerFilter implements Filter {
 
@@ -30,6 +31,7 @@ public class FrontControllerFilter implements Filter {
     private JakartaServletWebApplication application;
     private ITemplateEngine templateEngine;
 
+    // init() — запускается один раз при старте приложения
     @Override
     public void init(FilterConfig filterConfig) {
         this.application = JakartaServletWebApplication.buildApplication(
@@ -39,6 +41,7 @@ public class FrontControllerFilter implements Filter {
         logger.info("FrontControllerFilter initialized");
     }
 
+    // Все HTML лежат в /WEB-INF/templates/
     private ITemplateEngine buildTemplateEngine(final IWebApplication application) {
         WebApplicationTemplateResolver resolver = new WebApplicationTemplateResolver(application);
 
@@ -66,36 +69,52 @@ public class FrontControllerFilter implements Filter {
         response.setContentType("text/html; charset=UTF-8");
 
         String uri = request.getRequestURI();
+        String path = uri.substring(request.getContextPath().length());
 
-        if (uri.startsWith("/lab4_Vyshnikova/css")
-                || uri.startsWith("/lab4_Vyshnikova/js")
-                || uri.startsWith("/lab4_Vyshnikova/images")) {
+        // если приходит запрос на статический файл, мы передаем его DefaultServlet
+        // и он просто возвращает файл
+        if (path.startsWith("/css")) {
             chain.doFilter(req, resp);
             return;
         }
 
         handleCookies(request, response);
 
+        HttpSession session = request.getSession(false);
+
+        // Если пользователь не имеет права — отправляем на home.
+        String role = "guest";
+        if (session != null && session.getAttribute("role") != null) {
+            role = (String) session.getAttribute("role");
+        }
+        // Если роли нет → роль "guest".
+
+        // Проверяем совпадение URL и роли
+        if (!checkAccess(path, role)) {
+            response.sendRedirect("/lab4_Vyshnikova/home");
+            return;
+        }
+
+        // выбор контроллера для URL
         try (Writer writer = response.getWriter()) {
 
             IController controller;
-
-            String path = uri.substring(request.getContextPath().length());
 
             if (path.equals("/") || path.equals("")) {
                 controller = new HomeController();
 
             } else if (path.startsWith("/library")) {
-                controller = new LibraryController(path.substring(1));   // library/...
+                controller = new LibraryController(path.substring(1));
 
             } else if (path.startsWith("/auth")) {
-                controller = new AuthController(path.substring(1));      // auth/...
+                controller = new AuthController(path.substring(1));
 
             } else {
                 controller = new HomeController();
             }
 
             IServletWebExchange exchange = application.buildExchange(request, response);
+            // Контроллер сам рендерит нужный HTML-шаблон.
             controller.process(exchange, templateEngine, writer);
 
         } catch (Exception e) {
@@ -104,6 +123,29 @@ public class FrontControllerFilter implements Filter {
         }
     }
 
+    private boolean checkAccess(String path, String role) {
+
+        // эти URL доступны всем
+        if (path.startsWith("/auth") || path.equals("/") || path.equals("/home")) {
+            return true;
+        }
+
+        if (path.startsWith("/library")) {
+
+            // админ может всё
+            if (role.equals("admin")) return true;
+
+            // пользователь может только это:
+            if (role.equals("user")) {
+                return path.startsWith("/library/freeCopies")
+                        || path.startsWith("/library/booksByAuthor");
+            }
+
+            return false;
+        }
+
+        return true;
+    }
 
     private void sendErrorPage(HttpServletResponse response, String message) throws IOException {
         if (!response.isCommitted()) {

@@ -27,13 +27,13 @@ public class DAOUser {
         }
     }
 
-    public void save(String username, String password) {
+    public void save(String username, String password, String role) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
 
         try {
             tx.begin();
-            em.persist(new User(username, password));
+            em.persist(new User(username, password, role));
             tx.commit();
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();

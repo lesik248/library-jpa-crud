@@ -108,6 +108,7 @@ public class AuthController implements IController {
 
                 HttpSession session = httpReq.getSession(true);
                 session.setAttribute("user", username);
+                session.setAttribute("role", service.getRole(username));
 
                 ctx.setVariable("message", "Signed in!");
             } else {
